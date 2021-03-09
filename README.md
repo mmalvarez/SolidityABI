@@ -3,6 +3,8 @@
 This repository contains a specification, implementation, and verification (in Isabelle)
 of the [Solidity ABI](https://solidity.readthedocs.io/en/latest/abi-spec.html) encoder and decoder.
 
+NB: this development has not been updated for Isabelle2021. It should be used with Isabelle2020.
+
 The repository is structured as follows:
 
 - ABI types and other basic notions: `AbiTypes.thy`
