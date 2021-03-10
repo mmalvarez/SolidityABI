@@ -1477,6 +1477,10 @@ fun decode_sint l =
               (len0_bit0 (len0_bit0 (len0_bit0 (len0_bit0 len0_num1))))))))
       (take (nat_of_integer (32 : IntInf.int)) l));
 
+fun abi_size_lower_bound t =
+  (if abi_type_isstatic t then abi_static_size t
+    else Int_of_integer (32 : IntInf.int));
+
 fun bytes_to_string bs =
   map (fn b =>
         char_of_integer
@@ -3024,20 +3028,80 @@ else (if check_padding (nat sz) (drop (nat_of_integer (32 : IntInf.int)) la)
                                else let
                                       val n =
 decode_uint (take (nat_of_integer (32 : IntInf.int)) la);
-                                      val ts = replicate (nat n) ta;
                                     in
-                                      (case
-decode_dyn_tuple_heads ts zero_int
-  (plus_int ix (Int_of_integer (32 : IntInf.int)), l)
-of Inl (vos, (idxs, (byteoffset, bytes_parsed))) =>
-  (case decode_dyn_tuple_tails idxs ts vos byteoffset
-          (plus_int ix (Int_of_integer (32 : IntInf.int)), l)
-    of Inl (vs, bytes_parseda) =>
-      Inl (Varray (ta, vs),
-            plus_int (plus_int bytes_parsed bytes_parseda)
-              (Int_of_integer (32 : IntInf.int)))
-    | Inr a => Inr a)
-| Inr a => Inr a)
+                                      (if less_int (int_of_nat (size_list l))
+    (plus_int
+      (plus_int (Int_of_integer (32 : IntInf.int))
+        (times_inta n (abi_size_lower_bound ta)))
+      ix)
+then Inr (decode_err
+           [Chara (false, true, false, false, false, false, true, false),
+             Chara (true, false, false, true, true, true, true, false),
+             Chara (false, false, true, false, true, true, true, false),
+             Chara (true, false, true, false, false, true, true, false),
+             Chara (true, true, false, false, true, true, true, false),
+             Chara (false, false, false, false, false, true, false, false),
+             Chara (false, true, false, false, true, true, true, false),
+             Chara (true, false, true, false, false, true, true, false),
+             Chara (true, false, true, true, false, true, true, false),
+             Chara (true, false, false, false, false, true, true, false),
+             Chara (true, false, false, true, false, true, true, false),
+             Chara (false, true, true, true, false, true, true, false),
+             Chara (true, false, false, true, false, true, true, false),
+             Chara (false, true, true, true, false, true, true, false),
+             Chara (true, true, true, false, false, true, true, false),
+             Chara (false, false, false, false, false, true, false, false),
+             Chara (false, false, true, true, false, true, true, false),
+             Chara (true, false, true, false, false, true, true, false),
+             Chara (true, true, false, false, true, true, true, false),
+             Chara (true, true, false, false, true, true, true, false),
+             Chara (false, false, false, false, false, true, false, false),
+             Chara (false, false, true, false, true, true, true, false),
+             Chara (false, false, false, true, false, true, true, false),
+             Chara (true, false, false, false, false, true, true, false),
+             Chara (false, true, true, true, false, true, true, false),
+             Chara (false, false, false, false, false, true, false, false),
+             Chara (false, false, true, true, false, true, true, false),
+             Chara (true, true, true, true, false, true, true, false),
+             Chara (true, true, true, false, true, true, true, false),
+             Chara (true, false, true, false, false, true, true, false),
+             Chara (false, true, false, false, true, true, true, false),
+             Chara (false, false, false, false, false, true, false, false),
+             Chara (false, true, false, false, false, true, true, false),
+             Chara (true, true, true, true, false, true, true, false),
+             Chara (true, false, true, false, true, true, true, false),
+             Chara (false, true, true, true, false, true, true, false),
+             Chara (false, false, true, false, false, true, true, false),
+             Chara (false, false, false, false, false, true, false, false),
+             Chara (true, true, true, true, false, true, true, false),
+             Chara (false, true, true, true, false, true, true, false),
+             Chara (false, false, false, false, false, true, false, false),
+             Chara (true, false, false, false, false, true, true, false),
+             Chara (false, true, false, false, true, true, true, false),
+             Chara (false, true, false, false, true, true, true, false),
+             Chara (true, false, false, false, false, true, true, false),
+             Chara (true, false, false, true, true, true, true, false),
+             Chara (false, false, false, false, false, true, false, false),
+             Chara (true, true, false, false, true, true, true, false),
+             Chara (true, false, false, true, false, true, true, false),
+             Chara (false, true, false, true, true, true, true, false),
+             Chara (true, false, true, false, false, true, true, false)]
+           (ix, l))
+else let
+       val ts = replicate (nat n) ta;
+     in
+       (case decode_dyn_tuple_heads ts zero_int
+               (plus_int ix (Int_of_integer (32 : IntInf.int)), l)
+         of Inl (vos, (idxs, (byteoffset, bytes_parsed))) =>
+           (case decode_dyn_tuple_tails idxs ts vos byteoffset
+                   (plus_int ix (Int_of_integer (32 : IntInf.int)), l)
+             of Inl (vs, bytes_parseda) =>
+               Inl (Varray (ta, vs),
+                     plus_int (plus_int bytes_parsed bytes_parseda)
+                       (Int_of_integer (32 : IntInf.int)))
+             | Inr a => Inr a)
+         | Inr a => Inr a)
+     end)
                                     end)))
                 end))
 and decode_dyn_tuple_heads [] n (ix, l) = Inl ([], ([], (n, zero_int)))
